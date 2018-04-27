@@ -11,14 +11,10 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import java.util.Scanner;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.text.DecimalFormat;
 import java.util.concurrent.TimeUnit;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Timer;
-import java.util.TimerTask;
 import javafx.scene.control.Button;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -166,48 +162,44 @@ public class GameGUI extends Application{
 		text.setAlignment(Pos.CENTER);
 		Scene scene = new Scene(gridPane);
 
-		start.setOnAction(new EventHandler<ActionEvent>() {
-			public void handle(ActionEvent event){
-				primaryStage.setScene(scene);
-				executor.execute(task);
-				primaryStage.show();
-			}
+		start.setOnAction((event) -> {
+			primaryStage.setScene(scene);
+			executor.execute(task);
+			primaryStage.show();
+			
 		});
 
-		text.setOnKeyPressed(new EventHandler<KeyEvent>() {
-			public void handle(KeyEvent event){
+		text.setOnKeyPressed((event) -> {
 				//User done writing the word
 				if(event.getCode() == KeyCode.SPACE){
-						input = text.getCharacters().toString();
-						if(ord.equals(input.trim())){
-							poeng.setText("Score: " + Integer.toString(++score));
+					input = text.getCharacters().toString();
+					if(ord.equals(input.trim())){
+						poeng.setText("Score: " + Integer.toString(++score));
+					}
+					ord = getWord(index++);
+					word.setText(ord);
+					nextword.setText(getWord(index));
+					wordIndex = 0;
+					text.clear();
+				}else{
+					//Erases characters, update the wordindex accordingly
+					if(event.getCode() == KeyCode.BACK_SPACE){
+						if(wordIndex > 0){
+							wordIndex--;
 						}
-						ord = getWord(index++);
-						word.setText(ord);
-						nextword.setText(getWord(index));
-						wordIndex = 0;
-						text.clear();
 					}else{
-						//Erases characters, update the wordindex accordingly
-						if(event.getCode() == KeyCode.BACK_SPACE){
-							if(wordIndex > 0){
-								wordIndex--;
-							}
-						}else{
-							//Checking that the letter is of legal input only letters from a-z
-							match = regex.matcher(event.getText());
-							if(match.find()){
-								highLightLetters(ord, wordIndex, event.getText());
-							}
+						//Checking that the letter is of legal input only letters from a-z
+						match = regex.matcher(event.getText());
+						if(match.find()){
+							highLightLetters(ord, wordIndex, event.getText());
 						}
 					}
 				}
+				
 			
 		});
-		btn.setOnAction(new EventHandler<ActionEvent>(){
-			public void handle(ActionEvent event){
-				executor.execute(task);
-			}
+		btn.setOnAction((event) -> {
+			executor.execute(task);
 		});
 
 		gridPane1.add(start, 0, 0);
@@ -219,17 +211,15 @@ public class GameGUI extends Application{
 		gridPane.add(time, 0, 3);
 		gridPane.add(btn, 0, 2);
 
-		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-			public void handle(WindowEvent we){
-				if(score > highScore){
-					highScore = score;
-				}
-				pw.write(Integer.toString(highScore));
-				pw.close();
-				executor.shutdownNow();
-				sc.close();
-				primaryStage.close();
+		primaryStage.setOnCloseRequest((event) -> {
+			if(score > highScore){
+				highScore = score;
 			}
+			pw.write(Integer.toString(highScore));
+			pw.close();
+			executor.shutdownNow();
+			sc.close();
+			primaryStage.close();
 		});
 		primaryStage.setScene(startScene);
 
