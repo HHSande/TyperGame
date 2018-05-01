@@ -32,26 +32,30 @@ import java.util.regex.Matcher;
 
 
 public class GameGUI extends Application{
+
 	final String[] words = new String[200];
 	final String[] wordsToPickFrom = new String[1000];
 	final Random rand = new Random();
-	String legalInput = "[a-z]";
+	final String legalInput = "[a-z]";
 	final Pattern regex = Pattern.compile(legalInput);
-	Matcher match;
+	final Text beste = new Text();
+	final Text poeng = new Text("Score: 0");
+	final Text word = new Text("Word to type");
+	final Text time = new Text("Time left");
+	final DecimalFormat number = new DecimalFormat("#.0");
+	final double stopTime = 0.0005;
+
 	Scanner sc;
+	Matcher match;
 	int index;
 	int score;
 	String ord = null;
-	double secondsLeft;
 	String input;
 	Text nextword;
-	Button btn;
-	Button start;
-	DecimalFormat number = new DecimalFormat("#.0");
 	int wordIndex = 0;
 	int highScore = 0;
 	PrintWriter pw = null;
-	Text beste = new Text();
+	
 
 	public String getWord(int i){
 		return words[i]; 
@@ -78,29 +82,35 @@ public class GameGUI extends Application{
 
 	@Override
 	public void start(Stage primaryStage) throws Exception{
+
 		ExecutorService executor = Executors.newFixedThreadPool(1);
-		Text poeng = new Text("Score: 0");
-		Text word = new Text("Word to type");
-		Text time = new Text("Time left");
-		TextField text = new TextField();
+
+		final Button btn = new Button();
+		final Button start = new Button();
+		final TextField text = new TextField();
+		text.setAlignment(Pos.CENTER);
 
 	Runnable task = () -> {
 
+		fillArray();
+		double secondsLeft = 20;
+
 		score = 0;
-		secondsLeft = 20;
+		wordIndex = 0;
+		index = 0;
+		ord = getWord(index++);
+
+		//Prepare the GUI
 		text.setVisible(true);
 		text.setText("");
 		btn.setVisible(false);
 		poeng.setText("Score: " + Integer.toString(score));
-		fillArray();
-		wordIndex = 0;
-		index = 0;
-		ord = getWord(index++);
 		nextword.setOpacity(0.5);
 		word.setText(ord);
 		nextword.setText(getWord(index));
 		
-		while(secondsLeft >= 0.00005){
+		//Loop for counting down 
+		while(secondsLeft >= stopTime){
 		 	try{
 				TimeUnit.MILLISECONDS.sleep(100);
 			}catch(InterruptedException exe){
@@ -114,35 +124,41 @@ public class GameGUI extends Application{
 		 text.setVisible(false);
 		 btn.setVisible(true);
 		 time.setText("0.0");
+
 		 if(score > highScore){
 		 	highScore = score;
 		 	beste.setText("Highscore: " + Integer.toString(highScore));
 		 }
 	};
-		beste.setText("Highscore: 0");
-		btn = new Button();
-		start = new Button();
-		start.setText("Start");
-		btn.setText("Restart");
-		nextword = new Text("Neste ordet");
 
 		try{
+
 			sc = new Scanner(new File("ord.txt"));
 			for(int i = 0; i < wordsToPickFrom.length; i++){
 				wordsToPickFrom[i] = sc.nextLine();
 			}
+
 		}catch(FileNotFoundException exe){
 			System.out.println(exe.getMessage());
 		}
 
 		try{
+
 			sc = new Scanner(new File("hs.txt"));
 			highScore = Integer.parseInt(sc.nextLine());
 			beste.setText("Highscore: " + Integer.toString(highScore));
 			pw = new PrintWriter("hs.txt", "UTF-8");
+
 		}catch(FileNotFoundException exe){
 			pw = new PrintWriter("hs.txt", "UTF-8");
 		}
+
+
+		beste.setText("Highscore: 0");
+		start.setText("Start");
+		btn.setText("Restart");
+		nextword = new Text("Neste ordet");
+
 
 		GridPane gridPane = new GridPane();
 		gridPane.setMinSize(400,200);
@@ -159,8 +175,17 @@ public class GameGUI extends Application{
 		gridPane1.setAlignment(Pos.CENTER);
 
 		Scene startScene = new Scene(gridPane1);
-		text.setAlignment(Pos.CENTER);
 		Scene scene = new Scene(gridPane);
+
+		gridPane1.add(start, 0, 0);
+
+		gridPane.add(text, 0, 2);
+		gridPane.add(word, 0, 0);
+		gridPane.add(nextword, 0, 1);
+		gridPane.add(poeng, 2, 0);
+		gridPane.add(beste, 3, 0);
+		gridPane.add(time, 0, 3);
+		gridPane.add(btn, 0, 2);
 
 		start.setOnAction((event) -> {
 			primaryStage.setScene(scene);
@@ -170,47 +195,44 @@ public class GameGUI extends Application{
 		});
 
 		text.setOnKeyPressed((event) -> {
-				//User done writing the word
-				if(event.getCode() == KeyCode.SPACE){
-					input = text.getCharacters().toString();
-					if(ord.equals(input.trim())){
-						poeng.setText("Score: " + Integer.toString(++score));
+			//User done writing the word
+			if(event.getCode() == KeyCode.SPACE){
+				input = text.getCharacters().toString();
+				
+				if(ord.equals(input.trim())){
+					poeng.setText("Score: " + Integer.toString(++score));
+				}
+
+				ord = getWord(index++);
+				word.setText(ord);
+				nextword.setText(getWord(index));
+				wordIndex = 0;
+				text.clear();
+				
+			}else{
+				//Erases characters, update the wordindex accordingly
+				if(event.getCode() == KeyCode.BACK_SPACE){
+					if(wordIndex > 0){
+						wordIndex--;
 					}
-					ord = getWord(index++);
-					word.setText(ord);
-					nextword.setText(getWord(index));
-					wordIndex = 0;
-					text.clear();
 				}else{
-					//Erases characters, update the wordindex accordingly
-					if(event.getCode() == KeyCode.BACK_SPACE){
-						if(wordIndex > 0){
-							wordIndex--;
-						}
-					}else{
-						//Checking that the letter is of legal input only letters from a-z
-						match = regex.matcher(event.getText());
-						if(match.find()){
-							highLightLetters(ord, wordIndex, event.getText());
-						}
+					//Checking that the letter is of legal input only letters from a-z
+					match = regex.matcher(event.getText());
+					if(match.find()){
+						highLightLetters(ord, wordIndex, event.getText());
 					}
 				}
+			}
 				
 			
 		});
+
+		//Start the game by passing the runnable task to the executor. 
 		btn.setOnAction((event) -> {
 			executor.execute(task);
 		});
 
-		gridPane1.add(start, 0, 0);
-		gridPane.add(text, 0, 2);
-		gridPane.add(word, 0, 0);
-		gridPane.add(nextword, 0, 1);
-		gridPane.add(poeng, 2, 0);
-		gridPane.add(beste, 3, 0);
-		gridPane.add(time, 0, 3);
-		gridPane.add(btn, 0, 2);
-
+		//Clean up before closing the application. 
 		primaryStage.setOnCloseRequest((event) -> {
 			if(score > highScore){
 				highScore = score;
@@ -221,8 +243,8 @@ public class GameGUI extends Application{
 			sc.close();
 			primaryStage.close();
 		});
-		primaryStage.setScene(startScene);
 
+		primaryStage.setScene(startScene);
 		primaryStage.show();
 	}
 
